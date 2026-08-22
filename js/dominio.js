@@ -361,6 +361,56 @@ const Dominio = (() => {
     { id: 'L', nombre: 'Libre', abrev: '', color: '#9AA0AA', libre: true },
   ];
 
+  /* ---------- descubrir una rotación mirándola ----------
+     Mucha gente no tiene rotación: le ponen el cuadrante cada semana.
+     Para esos, pintar los días es la única forma que funciona. Pero
+     quien SÍ rota no tiene por qué saber describir su ciclo, así que
+     en vez de preguntárselo, se mira lo que ha pintado y se busca la
+     repetición. Solo se propone si se repite entera al menos dos
+     veces: con menos, sería adivinar. */
+
+  const detectarCiclo = (ids) => {
+    // fuera los huecos de los extremos: el ciclo empieza donde empieza lo pintado
+    let ini = 0;
+    let fin = ids.length;
+    while (ini < fin && ids[ini] == null) ini++;
+    while (fin > ini && ids[fin - 1] == null) fin--;
+
+    const s = ids.slice(ini, fin);
+    const n = s.length;
+    if (n < 2) return null;
+    if (s.some((x) => x == null)) return null;      // con huecos dentro no se afirma nada
+    if (s.every((x) => x === s[0])) return null;    // todo igual no es una rotación
+
+    for (let p = 2; p <= Math.floor(n / 2); p++) {
+      let cuadra = true;
+      for (let i = p; i < n; i++) {
+        if (s[i] !== s[i - p]) { cuadra = false; break; }
+      }
+      if (cuadra) return { periodo: p, desplazamiento: ini, secuencia: s.slice(0, p) };
+    }
+    return null;
+  };
+
+  /** Para cada día del ciclo, en qué punto de su racha está.
+      En "2 mañanas, 2 tardes, 2 noches, 2 libres" hay dos días que
+      ponen "Mañana": este cálculo permite llamarlos «1 de 2» y
+      «2 de 2», que es lo único que los distingue para quien elige. */
+  const rachasDeCiclo = (secuencia) => {
+    const n = (secuencia || []).length;
+    if (!n) return [];
+    const todosIguales = secuencia.every((x) => x === secuencia[0]);
+
+    return secuencia.map((id, i) => {
+      if (todosIguales) return { pos: i, tipoId: id, enRacha: i + 1, deRacha: n };
+      let atras = 0;
+      while (secuencia[(((i - atras - 1) % n) + n) % n] === id) atras++;
+      let alante = 0;
+      while (secuencia[(((i + alante + 1) % n) + n) % n] === id) alante++;
+      return { pos: i, tipoId: id, enRacha: atras + 1, deRacha: atras + alante + 1 };
+    });
+  };
+
   /** Solo los tipos que un patrón usa, más el libre. */
   const tiposDePatron = (secuencia) => {
     const usados = new Set([...secuencia, 'L']);
@@ -374,7 +424,7 @@ const Dominio = (() => {
     // horas
     r2, horasEntre, horasDeTipo, tipoPorId,
     // patrón y días
-    turnoDePatron, diaDe, diasDeMes, diasEntreFechas, rejillaDeMes,
+    turnoDePatron, diaDe, diasDeMes, diasEntreFechas, rejillaDeMes, rachasDeCiclo, detectarCiclo,
     // recuentos
     resumen, horasContratoDe, saldoDeMes, saldoDeAnio,
     // exportar

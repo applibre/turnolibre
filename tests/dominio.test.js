@@ -233,6 +233,110 @@ test('el saldo del año cuadra con la suma de sus meses', () => {
   assert.strictEqual(dias, 365);
 });
 
+/* ================= sin rotación fija =================
+   Mucha gente no rota: le ponen el cuadrante cada semana, cubre huecos,
+   hace unas mañanas y unas tardes sin orden. La app tiene que servirles
+   igual, así que todo debe funcionar con patron = null. */
+
+const suelto = {
+  ajustes: { horasContrato: { tipo: 'semanal', valor: 40 } },
+  tiposTurno: D.tiposDePatron(['M', 'T', 'N']),
+  patron: null,
+  excepciones: {
+    '2026-09-02': { tipoId: 'M' },
+    '2026-09-03': { tipoId: 'T' },
+    '2026-09-07': { tipoId: 'N' },
+    '2026-09-08': { tipoId: 'M', horasReales: 10, nota: 'refuerzo' },
+    '2026-09-15': { tipoId: 'T' },
+  },
+  festivos: [],
+};
+
+test('sin rotación, un día sin poner no es un día trabajado', () => {
+  const d = D.diaDe('2026-09-01', suelto);
+  assert.strictEqual(d.tipoId, null);
+  assert.strictEqual(d.tipo, null);
+  assert.strictEqual(d.trabaja, false);
+  assert.strictEqual(d.horasReales, 0);
+});
+
+test('sin rotación, los días puestos a mano mandan', () => {
+  assert.strictEqual(D.diaDe('2026-09-02', suelto).tipoId, 'M');
+  assert.strictEqual(D.diaDe('2026-09-02', suelto).horasReales, 8);
+  assert.strictEqual(D.diaDe('2026-09-07', suelto).nocturno, true);
+  assert.strictEqual(D.diaDe('2026-09-08', suelto).horasReales, 10);
+  assert.strictEqual(D.diaDe('2026-09-08', suelto).extra, 2);
+});
+
+test('sin rotación, el mes suma solo lo puesto', () => {
+  const r = D.resumen(D.diasDeMes(2026, 9, suelto));
+  assert.strictEqual(r.diasTrabajados, 5);
+  assert.strictEqual(r.horasReales, 42);   // 8+8+8+10+8
+  assert.strictEqual(r.noches, 1);
+});
+
+test('sin rotación, el contrato y el saldo siguen saliendo', () => {
+  const s = D.saldoDeMes(2026, 9, suelto);
+  assert.strictEqual(s.horasContrato, D.r2(40 / 7 * 30));
+  assert.strictEqual(s.saldo, D.r2(42 - 40 / 7 * 30));
+});
+
+test('sin rotación, el calendario exportado sale igual', () => {
+  const ics = D.generarICS(D.diasDeMes(2026, 9, suelto), { sello: '20260821T000000Z' });
+  assert.strictEqual(ics.split('BEGIN:VEVENT').length - 1, 5);
+  assert.ok(ics.includes('UID:2026-09-08@turnolibre.applibre'));
+});
+
+test('la rejilla no revienta sin rotación', () => {
+  const r = D.rejillaDeMes(2026, 9, suelto);
+  assert.strictEqual(r.length % 7, 0);
+  assert.strictEqual(r.filter((d) => d.tipoId).length, 5);
+});
+
+/* ---------- descubrir la rotación mirándola ---------- */
+
+test('reconoce una rotación que se repite entera dos veces', () => {
+  const c = D.detectarCiclo(['M', 'M', 'T', 'T', 'N', 'N', 'L', 'L', 'M', 'M', 'T', 'T', 'N', 'N', 'L', 'L']);
+  assert.strictEqual(c.periodo, 8);
+  assert.deepStrictEqual(c.secuencia, ['M', 'M', 'T', 'T', 'N', 'N', 'L', 'L']);
+});
+
+test('devuelve el ciclo más corto que encaje', () => {
+  assert.strictEqual(D.detectarCiclo(['M', 'L', 'M', 'L', 'M', 'L', 'M', 'L']).periodo, 2);
+});
+
+test('no adivina con menos de dos repeticiones enteras', () => {
+  assert.strictEqual(D.detectarCiclo(['M', 'M', 'T', 'T', 'N', 'N', 'L', 'L', 'M', 'M', 'T', 'T']), null);
+});
+
+test('no adivina si de verdad es aleatorio', () => {
+  assert.strictEqual(D.detectarCiclo(['M', 'T', 'N', 'L', 'T', 'M', 'L', 'N']), null);
+  assert.strictEqual(D.detectarCiclo(['M', 'M', 'T', 'M', 'N', 'T', 'M', 'L']), null);
+});
+
+test('no adivina si hay días sin poner en medio', () => {
+  assert.strictEqual(D.detectarCiclo(['M', 'L', null, 'M', 'L']), null);
+});
+
+test('ignora los días sin poner de los extremos y dice dónde empieza', () => {
+  const c = D.detectarCiclo([null, null, 'M', 'L', 'M', 'L', null]);
+  assert.strictEqual(c.periodo, 2);
+  assert.strictEqual(c.desplazamiento, 2);
+});
+
+test('todo el mismo turno no se considera una rotación', () => {
+  assert.strictEqual(D.detectarCiclo(['M', 'M', 'M', 'M', 'M', 'M']), null);
+});
+
+test('lo detectado reproduce exactamente lo que se pintó', () => {
+  const pintado = ['M', 'M', 'M', 'M', 'M', 'L', 'L', 'M', 'M', 'M', 'M', 'M', 'L', 'L'];
+  const c = D.detectarCiclo(pintado);
+  const patron = { secuencia: c.secuencia, ancla: '2026-09-01' };
+  pintado.forEach((esperado, i) => {
+    assert.strictEqual(D.turnoDePatron(D.sumarDias('2026-09-01', i), patron), esperado);
+  });
+});
+
 /* ================= lo proyectado no cuenta =================
    El patrón se puede pintar hacia atrás sin fin, pero las horas de
    antes de empezar a usar la app son una suposición, no un registro.

@@ -1,7 +1,15 @@
 /* ===========================================================
    TurnoLibre · vista del mes
-   La pantalla principal. Abrirla ya es ver si trabajas el 14:
-   eso no debe costar ni un toque.
+   La pantalla principal, y la única que mucha gente va a usar.
+
+   Aquí se pinta. No se pide a nadie que describa su rotación en
+   abstracto —que es difícil aunque la vivas— sino que la enseñe:
+   eliges un turno abajo y tocas los días. Sirve igual para quien
+   rota siempre igual que para quien cubre huecos sin ningún orden,
+   que es mucha más gente de la que parece.
+
+   Si de lo pintado sale una repetición clara, la app se ofrece a
+   seguirla. Nunca lo hace sola.
    =========================================================== */
 const Mes = (() => {
   'use strict';
@@ -9,8 +17,11 @@ const Mes = (() => {
   const { $, esc, hoja, cerrarHoja, tosti, vibrar, horas } = UI;
 
   let anio, mes;
+  let brocha = null;          // el turno que se pone al tocar; null = abrir el detalle
 
   const hoy = () => Dominio.hoyISO();
+  const dos = (n) => String(n).padStart(2, '0');
+  const tono = (color) => `color-mix(in srgb, ${color} 20%, var(--surface))`;
 
   function iniciar() {
     const h = Dominio.deISO(hoy());
@@ -20,6 +31,11 @@ const Mes = (() => {
     $('#mes-antes').onclick = () => mover(-1);
     $('#mes-despues').onclick = () => mover(1);
     $('#mes-titulo').onclick = irAHoy;
+
+    // La brocha arranca en el primer turno de trabajo: quien entra por
+    // primera vez tiene un calendario vacío y lo que necesita es pintar.
+    const t = (Estado.leer().tiposTurno || []).find((x) => !x.libre);
+    brocha = t ? t.id : null;
 
     Estado.escuchar(() => { if ($('#p-mes').classList.contains('viva')) pintar(); });
   }
@@ -38,7 +54,7 @@ const Mes = (() => {
     pintar();
   }
 
-  /* ---------- pintar ---------- */
+  /* ---------- pintar la pantalla ---------- */
 
   function pintar() {
     const datos = Estado.paraDominio();
@@ -46,7 +62,9 @@ const Mes = (() => {
 
     pintarTira(datos);
     pintarRejilla(datos);
-    pintarLeyenda(datos);
+    pintarBrochas(datos);
+    pintarAyuda(datos);
+    revisarCiclo(datos);
   }
 
   /* La tira dice exactamente lo que es: en un mes pasado son horas
@@ -55,9 +73,8 @@ const Mes = (() => {
      empezaste a contar, no dice nada, porque no hay nada que decir. */
   function pintarTira(datos) {
     const h = hoy();
-    const dosc = (n) => String(n).padStart(2, '0');
-    const primero = `${anio}-${dosc(mes)}-01`;
-    const ultimo = `${anio}-${dosc(mes)}-${dosc(Dominio.diasDelMes(anio, mes))}`;
+    const primero = `${anio}-${dos(mes)}-01`;
+    const ultimo = `${anio}-${dos(mes)}-${dos(Dominio.diasDelMes(anio, mes))}`;
 
     const futuro = primero > h;
     const enCurso = primero <= h && h <= ultimo;
@@ -100,18 +117,26 @@ const Mes = (() => {
 
     $('#rejilla').innerHTML = dias.map((d) => {
       const t = d.tipo;
-      const fondo = t && !t.libre ? tono(t.color) : '';
-      const color = t && !t.libre ? t.color : '';
+      const puesto = !!t;
+      const fondo = puesto && !t.libre ? tono(t.color) : '';
+      const color = puesto && !t.libre ? t.color : '';
       const num = Dominio.deISO(d.fecha).getDate();
 
       const marcas = [];
       if (d.extra > 0.01) marcas.push(`<span class="extra">+${Dominio.r2(d.extra)}</span>`);
       if (d.extra < -0.01) marcas.push(`<span class="extra">${Dominio.r2(d.extra)}</span>`);
 
-      return `<button class="dia${d.relleno ? ' relleno' : ''}${d.fecha === h ? ' hoy' : ''}${d.cuenta === false ? ' proyectado' : ''}"
+      const clases = ['dia'];
+      if (!puesto) clases.push('vacio');
+      if (t && t.libre) clases.push('libre');
+      if (d.relleno) clases.push('relleno');
+      if (d.fecha === h) clases.push('hoy');
+      if (d.cuenta === false) clases.push('proyectado');
+
+      return `<button class="${clases.join(' ')}"
         data-f="${d.fecha}"
         style="${fondo ? `background:${fondo};` : ''}${color ? `color:${color};` : ''}"
-        aria-label="${esc(Dominio.fechaLarga(d.fecha))}: ${esc(t ? t.nombre : 'sin turno')}">
+        aria-label="${esc(Dominio.fechaLarga(d.fecha))}: ${esc(t ? t.nombre : 'sin poner')}">
         ${d.festivo ? '<span class="fest"></span>' : ''}
         ${marcas.length ? `<span class="marcas">${marcas.join('')}</span>` : ''}
         <span class="n">${num}</span>
@@ -121,22 +146,155 @@ const Mes = (() => {
     }).join('');
 
     $('#rejilla').querySelectorAll('.dia').forEach((b) => {
-      b.onclick = () => { vibrar(); abrirDia(b.dataset.f); };
+      b.onclick = () => tocarDia(b.dataset.f);
     });
   }
 
-  /* Fondo suave del color del turno: legible en claro y en oscuro
-     porque se mezcla con el fondo real de la pantalla, no con blanco. */
-  const tono = (color) => `color-mix(in srgb, ${color} 20%, var(--surface))`;
+  /* ---------- la barra de brochas ----------
+     Siempre visible y siempre marcada: al mirarla sabes qué va a pasar
+     cuando toques un día. Sin modos escondidos. */
 
-  function pintarLeyenda(datos) {
-    const usados = (datos.tiposTurno || []).filter((t) => !t.libre);
-    $('#leyenda').innerHTML = usados.map((t) => `
-      <span><i style="background:${esc(t.color)}"></i>${esc(t.nombre)}${
-        t.entrada ? ` · ${esc(t.entrada)}–${esc(t.salida)}` : ''}</span>`).join('');
+  function pintarBrochas(datos) {
+    const tipos = datos.tiposTurno || [];
+    const conPatron = !!(datos.patron && datos.patron.secuencia && datos.patron.secuencia.length);
+
+    $('#brochas').innerHTML = tipos.map((t) => `
+      <button data-b="${esc(t.id)}" class="${brocha === t.id ? 'viva' : ''}"
+        style="${brocha === t.id && !t.libre ? `background:${esc(t.color)};border-color:${esc(t.color)};color:#fff` : ''}"
+        aria-pressed="${brocha === t.id}">
+        <i style="background:${t.libre ? 'var(--line2)' : esc(t.color)}"></i>${esc(t.nombre)}
+      </button>`).join('')
+      + `<button data-b="" class="${brocha === null ? 'viva' : ''}" aria-pressed="${brocha === null}">
+           <span class="lapiz">✎</span>Detalle
+         </button>`;
+
+    $('#brochas').querySelectorAll('[data-b]').forEach((b) => {
+      b.onclick = () => {
+        brocha = b.dataset.b || null;
+        vibrar();
+        pintarBrochas(Estado.paraDominio());
+        pintarAyuda(Estado.paraDominio());
+      };
+    });
+
+    $('#brochas').classList.toggle('con-patron', conPatron);
   }
 
-  /* ---------- corregir un día ---------- */
+  function pintarAyuda(datos) {
+    const puestos = Object.keys(datos.excepciones || {}).length;
+    const conPatron = !!(datos.patron && datos.patron.secuencia && datos.patron.secuencia.length);
+    const t = brocha ? Dominio.tipoPorId(datos.tiposTurno, brocha) : null;
+
+    let texto = '';
+    if (brocha === null) {
+      texto = 'Toca un día para ver y ajustar sus horas, su nota o si fue festivo.';
+    } else if (!puestos && !conPatron) {
+      texto = `Toca los días que trabajas de <b>${esc(t ? t.nombre : '')}</b>. `
+        + 'Cambia de turno abajo cuando lo necesites.';
+    } else {
+      texto = `Tocando pones <b>${esc(t ? t.nombre : '')}</b>. Toca otra vez el mismo día para quitarlo.`;
+    }
+    $('#ayuda-pintar').innerHTML = texto;
+  }
+
+  /* ---------- tocar un día ---------- */
+
+  function tocarDia(fecha) {
+    vibrar();
+    if (brocha === null) { abrirDia(fecha); return; }
+
+    const datos = Estado.paraDominio();
+    const d = Dominio.diaDe(fecha, datos);
+
+    if (d.tipoId === brocha) {
+      // segundo toque con la misma brocha: quitar. Pero si el día lleva
+      // nota u horas ajustadas, no se borra a la callada: se abre para
+      // que se vea lo que hay.
+      if (d.nota || d.ajustado) { abrirDia(fecha); return; }
+      Estado.quitarExcepcion(fecha);
+      return;
+    }
+
+    const delPatron = Dominio.turnoDePatron(fecha, datos.patron);
+    Estado.ponerExcepcion(fecha, { tipoId: brocha === delPatron ? null : brocha });
+  }
+
+  /* ---------- proponer seguir la rotación ----------
+     Se mira lo pintado; si se repite entero al menos dos veces, se
+     ofrece continuarlo. Nunca se aplica solo, y si se dice que no,
+     no se vuelve a insistir con esa misma rotación. */
+
+  function revisarCiclo(datos) {
+    const b = $('#banner-ciclo');
+    const ya = !!(datos.patron && datos.patron.secuencia && datos.patron.secuencia.length);
+    const fechas = Object.keys(datos.excepciones || {})
+      .filter((f) => datos.excepciones[f].tipoId)
+      .sort();
+
+    if (ya || fechas.length < 4) { b.classList.add('oculto'); return; }
+
+    const ids = [];
+    for (let f = fechas[0]; Dominio.diasEntre(f, fechas[fechas.length - 1]) >= 0; f = Dominio.sumarDias(f, 1)) {
+      const e = datos.excepciones[f];
+      ids.push(e && e.tipoId ? e.tipoId : null);
+    }
+
+    const c = Dominio.detectarCiclo(ids);
+    if (!c) { b.classList.add('oculto'); return; }
+
+    const firma = c.secuencia.join('') + '@' + fechas[0];
+    if (datos.ajustes.cicloRechazado === firma) { b.classList.add('oculto'); return; }
+
+    const ancla = Dominio.sumarDias(fechas[0], c.desplazamiento);
+    b.innerHTML = `<span>🔁</span><span>Tus turnos se repiten cada <b>${c.periodo} días</b>.
+      ¿Sigo yo con el resto del año?</span>`;
+    b.classList.remove('oculto');
+    b.onclick = () => confirmarCiclo(c, ancla, firma);
+  }
+
+  function confirmarCiclo(c, ancla, firma) {
+    const tipos = Estado.leer().tiposTurno;
+    hoja({
+      titulo: `¿Se repite cada ${c.periodo} días?`,
+      sub: 'Si lo confirmas, relleno el resto del año con esta rotación. '
+        + 'Podrás corregir cualquier día tocándolo, y deshacerlo en Ajustes.',
+      html: `<div class="turnos" style="margin-bottom:14px">
+          ${c.secuencia.map((id, i) => {
+            const t = Dominio.tipoPorId(tipos, id);
+            const libre = !t || t.libre;
+            return `<div class="turnos-ver" style="color:${libre ? 'var(--tx2)' : esc(t.color)};
+              background:${libre ? 'var(--sunk)' : tono(t.color)}">
+              <span class="t">${esc(t ? t.nombre : '—')}</span><span class="h">día ${i + 1}</span></div>`;
+          }).join('')}
+        </div>
+        <div class="botones">
+          <button class="btn" data-no>Ahora no</button>
+          <button class="btn principal" data-si>Sí, continúa</button>
+        </div>`,
+      listo(cc) {
+        $('[data-si]', cc).onclick = () => {
+          Estado.cambiar((d) => {
+            d.patron = { secuencia: [...c.secuencia], ancla };
+            // los días pintados que ya coinciden con la rotación dejan de
+            // guardarse uno a uno: el patrón los calcula
+            Object.keys(d.excepciones).forEach((f) => {
+              const e = d.excepciones[f];
+              if (!e.tipoId || e.nota || typeof e.horasReales === 'number') return;
+              if (Dominio.turnoDePatron(f, d.patron) === e.tipoId) delete d.excepciones[f];
+            });
+          });
+          cerrarHoja();
+          tosti('Listo: el año está puesto. Toca cualquier día para corregirlo', 'buena');
+        };
+        $('[data-no]', cc).onclick = () => {
+          Estado.cambiar((d) => { d.ajustes.cicloRechazado = firma; });
+          cerrarHoja();
+        };
+      },
+    });
+  }
+
+  /* ---------- el detalle de un día ---------- */
 
   function abrirDia(fecha) {
     const datos = Estado.paraDominio();
@@ -144,21 +302,26 @@ const Mes = (() => {
     const tipos = datos.tiposTurno || [];
     const delPatron = Dominio.turnoDePatron(fecha, datos.patron);
 
+    const sub = !d.tipo ? 'Sin poner'
+      : (d.tipoId === delPatron ? 'Lo que dice tu rotación'
+        : (delPatron ? `Cambiado · tu rotación decía ${nombreDe(tipos, delPatron)}` : ''));
+
     hoja({
       titulo: Dominio.fechaLarga(fecha),
-      sub: d.tipoId === delPatron
-        ? 'Lo que dice tu patrón'
-        : `Cambiado · el patrón decía ${esc(nombreDe(tipos, delPatron))}`,
+      sub,
       html: `
         <div class="campo">
           <label>Turno</label>
           <div class="turnos" id="elegir-turno">
             ${tipos.map((t) => `
               <button data-t="${esc(t.id)}" class="${t.id === d.tipoId ? 'viva' : ''}"
-                style="color:${esc(t.color)};background:${t.libre ? 'var(--sunk)' : tono(t.color)}">
+                style="color:${t.libre ? 'var(--tx2)' : esc(t.color)};background:${t.libre ? 'var(--sunk)' : tono(t.color)}">
                 <span class="t">${esc(t.nombre)}</span>
                 <span class="h">${t.libre ? '—' : esc(horas(Dominio.horasDeTipo(t)))}</span>
               </button>`).join('')}
+            <button data-t="" class="${!d.tipoId ? 'viva' : ''}" style="color:var(--tx3)">
+              <span class="t">Sin poner</span><span class="h">—</span>
+            </button>
           </div>
         </div>
 
@@ -179,13 +342,12 @@ const Mes = (() => {
 
         <label class="fila" style="border:0;padding:4px 0 12px">
           <span>Festivo</span>
-          <input type="checkbox" id="in-fest" ${d.festivo ? 'checked' : ''}
-            style="width:22px;height:22px">
+          <input type="checkbox" id="in-fest" ${d.festivo ? 'checked' : ''} style="width:22px;height:22px">
         </label>
 
         <div class="botones">
           ${d.cambiado || d.ajustado || d.nota
-            ? '<button class="btn" data-restaurar>Volver al patrón</button>' : ''}
+            ? `<button class="btn" data-restaurar>${delPatron ? 'Volver a mi rotación' : 'Vaciar el día'}</button>` : ''}
           <button class="btn principal" data-guardar>Guardar</button>
         </div>`,
 
@@ -198,12 +360,11 @@ const Mes = (() => {
           const t = Dominio.tipoPorId(tipos, tipoId);
           const libre = !t || t.libre;
           cajaHoras.hidden = libre;
-          if (!libre && +inHoras.value === 0) inHoras.value = Dominio.horasDeTipo(t);
         };
 
         c.querySelectorAll('#elegir-turno button').forEach((b) => {
           b.onclick = () => {
-            tipoId = b.dataset.t;
+            tipoId = b.dataset.t || null;
             c.querySelectorAll('#elegir-turno button').forEach((x) => x.classList.remove('viva'));
             b.classList.add('viva');
             const t = Dominio.tipoPorId(tipos, tipoId);
@@ -224,9 +385,9 @@ const Mes = (() => {
         const botonRestaurar = $('[data-restaurar]', c);
         if (botonRestaurar) botonRestaurar.onclick = () => {
           Estado.quitarExcepcion(fecha);
-          quitarFestivoSiHace(fecha, false);
+          marcarFestivo(fecha, false);
           cerrarHoja();
-          tosti('Día devuelto al patrón');
+          tosti(delPatron ? 'Día devuelto a tu rotación' : 'Día vaciado');
         };
 
         $('[data-guardar]', c).onclick = () => {
@@ -235,11 +396,11 @@ const Mes = (() => {
           const reales = t && !t.libre ? Dominio.r2(+inHoras.value || 0) : 0;
 
           Estado.ponerExcepcion(fecha, {
-            tipoId: tipoId === delPatron ? null : tipoId,
+            tipoId: !tipoId || tipoId === delPatron ? null : tipoId,
             horasReales: reales === previstas ? null : reales,
             nota: $('#in-nota', c).value.trim() || null,
           });
-          quitarFestivoSiHace(fecha, $('#in-fest', c).checked);
+          marcarFestivo(fecha, $('#in-fest', c).checked);
 
           cerrarHoja();
           tosti('Guardado', 'buena');
@@ -255,11 +416,11 @@ const Mes = (() => {
     return t ? t.nombre : 'nada';
   };
 
-  function quitarFestivoSiHace(fecha, debeSerFestivo) {
+  function marcarFestivo(fecha, debeSerlo) {
     Estado.cambiar((d) => {
       const i = d.festivos.indexOf(fecha);
-      if (debeSerFestivo && i === -1) d.festivos.push(fecha);
-      if (!debeSerFestivo && i !== -1) d.festivos.splice(i, 1);
+      if (debeSerlo && i === -1) d.festivos.push(fecha);
+      if (!debeSerlo && i !== -1) d.festivos.splice(i, 1);
     });
   }
 

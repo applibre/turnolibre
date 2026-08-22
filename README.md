@@ -8,11 +8,15 @@
 
 ## Para quién es
 
-Para quien no trabaja de nueve a cinco: enfermería, policía, bomberos, fábrica, seguridad, hostelería. Gente con una rotación que no coincide con el calendario de nadie más.
+Para quien no trabaja de nueve a cinco: enfermería, policía, bomberos, fábrica, seguridad, hostelería.
+
+Y da igual cómo sean tus turnos. **No hace falta que tengas una rotación fija.** Si te ponen el cuadrante cada semana, si cubres huecos, si haces unas mañanas y unas tardes sin ningún orden, la app sirve exactamente igual.
 
 ## Qué hace
 
-**Te pinta el año entero.** Le dices tu rotación una vez —2-2-2, 7×7, 6×4, semana fija, o la tuya montada día a día— y le señalas qué turno tienes hoy. Con eso ya sabe pintarte cualquier fecha, hacia adelante y hacia atrás.
+**Pintas tus días.** Eliges un turno abajo y tocas los días en el calendario. Ya está. No hay que describir ningún ciclo ni entender ninguna jerga: enseñas tus turnos y la app los guarda.
+
+**Y si se repiten, lo nota.** Cuando lo que has pintado forma una rotación clara, te lo dice: *«tus turnos se repiten cada 8 días, ¿sigo yo con el resto del año?»*. Un toque y te rellena hasta diciembre. Si tu horario es aleatorio, no te propone nada — antes que adivinar, se calla.
 
 **Te lleva la cuenta.** Esto es lo que ninguna otra app hace: cuántas horas has trabajado **de verdad** frente a las que dice tu contrato, con el saldo del mes y del año. Aparte, el recuento de noches, festivos y domingos, que se pagan distinto.
 
@@ -25,7 +29,8 @@ Para quien no trabaja de nueve a cinco: enfermería, policía, bomberos, fábric
 - **No monta cuadrantes de equipo.** Eso necesita un servidor y es el negocio de otros. Aquí el usuario eres tú, no tu jefe.
 - **No te localiza ni te hace fichar por GPS.** Sería convertirla en lo contrario de lo que es.
 - **No calcula tu nómina en euros.** Cada convenio paga distinto la noche, el festivo y la hora extra. Contamos horas, que es objetivo.
-- **No inventa historial.** El patrón se puede pintar hacia atrás sin fin, pero esas horas serían una suposición. Solo se suman las de la fecha que tú marques como inicio; lo anterior aparece rayado en el calendario y no cuenta en ningún total.
+- **No inventa historial.** Una rotación se puede proyectar hacia atrás sin fin, pero esas horas serían una suposición. Solo se suman las de la fecha que tú marques como inicio; lo anterior aparece rayado en el calendario y no cuenta en ningún total.
+- **No adivina tu rotación.** Solo te propone una cuando lo que has pintado se repite entero al menos dos veces. Con menos, se calla.
 - **No te pide cuenta, ni correo, ni contraseña.** No hay nada que crear.
 
 ## Una advertencia honesta
@@ -66,7 +71,7 @@ Estructura:
 | `js/almacen.js` | Guardado local, versión de esquema, migraciones y rescate si los datos se corrompen |
 | `js/estado.js` | Un solo sitio donde cambian los datos, con aviso a las vistas |
 | `js/vistas/` | Una pantalla por fichero |
-| `tests/` | 47 pruebas del dominio |
+| `tests/` | 61 pruebas del dominio |
 
 Adáptalo a tu convenio, cámbiale los colores, tradúcelo. Es tuyo: licencia MIT.
 

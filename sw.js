@@ -2,7 +2,7 @@
    Se instala con copia fresca y sirve de la copia cuando no hay red.
    El nombre del deposito sube en cada despliegue: asi el navegador
    tira lo viejo en vez de servir una version a medias. */
-const CACHE = 'turnolibre-v1';
+const CACHE = 'turnolibre-v2';
 
 const FICHEROS = [
   './',

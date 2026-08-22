@@ -225,6 +225,16 @@ button { font: inherit; color: inherit; cursor: pointer; }
   letter-spacing: .04em;
   line-height: 1;
 }
+/* Un día sin poner no es un día libre: es un día del que no se sabe
+   nada. Se ve distinto a propósito, para no dar por descansado lo
+   que solo está sin rellenar. */
+.dia.vacio {
+  background: transparent;
+  border: 1px dashed var(--line2);
+  color: var(--tx3);
+}
+.dia.libre { background: var(--sunk); }
+
 .dia.relleno { opacity: .3; }
 /* Antes de empezar a usar la app el patrón se pinta, pero rayado:
    es una proyección, no un registro, y no suma en ningún recuento. */
@@ -268,28 +278,86 @@ button { font: inherit; color: inherit; cursor: pointer; }
   opacity: .55;
 }
 
-/* ---------- leyenda ---------- */
+/* ---------- barra de brochas ----------
+   Lo que está marcado aquí es lo que pasa al tocar un día. Siempre
+   visible: sin modos escondidos que sorprendan a nadie. */
 
-.leyenda {
+.brochas {
+  flex: 0 0 auto;
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px 14px;
-  margin-top: 16px;
-  padding: 0 2px;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 9px 12px calc(9px + env(safe-area-inset-bottom, 0px) * 0);
+  border-top: 1px solid var(--line);
+  background: var(--surface);
 }
-.leyenda span {
+.brochas::-webkit-scrollbar { display: none; }
+.brochas button {
+  flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 12px;
+  gap: 7px;
+  padding: 9px 13px;
+  border: 1.5px solid var(--line2);
+  border-radius: 999px;
+  background: var(--paper);
+  font-size: 13.5px;
+  font-weight: 600;
   color: var(--tx2);
+  white-space: nowrap;
 }
-.leyenda i {
+.brochas button i {
   width: 11px;
   height: 11px;
   border-radius: 3px;
   display: inline-block;
+  flex: 0 0 auto;
 }
+.brochas button.viva { color: var(--tx); border-color: var(--tx); }
+.brochas button.viva i { box-shadow: 0 0 0 2px rgba(255, 255, 255, .55); }
+.brochas .lapiz { font-size: 14px; }
+
+/* ---------- ayuda bajo el calendario ---------- */
+
+.ayuda {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--tx3);
+  margin: 14px 2px 0;
+}
+.ayuda b { color: var(--tx2); }
+
+/* ---------- banner en calma ----------
+   Ni interrumpe ni desaparece: espera a que lo toques. */
+
+.banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--acento);
+  border-radius: var(--r-md);
+  background: color-mix(in srgb, var(--acento) 11%, var(--surface));
+  color: var(--tx);
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: left;
+}
+.banner b { font-weight: 800; }
+
+/* fichas de solo lectura, para enseñar una rotación detectada */
+.turnos-ver {
+  border-radius: var(--r-md);
+  padding: 11px 6px 10px;
+  display: grid;
+  gap: 2px;
+  justify-items: center;
+}
+.turnos-ver .t { font-size: 13.5px; font-weight: 700; }
+.turnos-ver .h { font-size: 11px; opacity: .8; }
 
 /* ---------- tarjetas y listas ---------- */
 

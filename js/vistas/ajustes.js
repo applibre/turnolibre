@@ -23,17 +23,30 @@ const Ajustes = (() => {
 
     $('#ajustes-cuerpo').innerHTML = `
       <div class="tarjeta">
-        <h3>Tu patrón</h3>
-        <div class="patron viva" style="margin-bottom:10px">
-          <b>${patron.secuencia.length} días de ciclo</b>
-          <small>Empezó el ${esc(patron.ancla ? Dominio.fechaLarga(patron.ancla) : '—')}</small>
-          <span class="tira-p">${patron.secuencia.map((id) => {
-            const t = Dominio.tipoPorId(tipos, id);
-            return `<i style="background:${t && !t.libre ? esc(t.color) : 'var(--line2)'}"></i>`;
-          }).join('')}</span>
-        </div>
-        <button class="btn" data-editar-patron>Cambiar mi patrón</button>
-        <button class="btn" data-mover-ciclo>Ajustar en qué día del ciclo estoy</button>
+        <h3>Mi rotación</h3>
+        ${patron.secuencia.length ? `
+          <div class="patron viva" style="margin-bottom:10px">
+            <b>Se repite cada ${patron.secuencia.length} días</b>
+            <small>Empezó el ${esc(patron.ancla ? Dominio.fechaLarga(patron.ancla) : '—')}</small>
+            <span class="tira-p">${patron.secuencia.map((id) => {
+              const t = Dominio.tipoPorId(tipos, id);
+              return `<i style="background:${t && !t.libre ? esc(t.color) : 'var(--line2)'}"></i>`;
+            }).join('')}</span>
+          </div>
+          <button class="btn" data-editar-patron>Cambiar mi rotación</button>
+          <button class="btn" data-mover-ciclo>Ajustar en qué día del ciclo estoy</button>
+          <button class="btn" data-quitar-patron>Quitar la rotación</button>
+          <p class="pista chica">Al quitarla, los días que ya tengas puestos se quedan;
+          simplemente deja de rellenarse sola hacia adelante.</p>
+        ` : `
+          <div class="aviso" style="margin-bottom:12px">
+            <span>🎨</span>
+            <span>No tienes rotación, y <b>no hace falta</b>. Pinta tus días en el calendario
+            y ya está: sirve igual si te ponen el cuadrante cada semana sin ningún orden.
+            Si algún día se repite sola, la app te avisará y se ofrecerá a seguirla.</span>
+          </div>
+          <button class="btn" data-editar-patron>Tengo una rotación fija · montarla</button>
+        `}
       </div>
 
       <div class="tarjeta">
@@ -104,8 +117,10 @@ const Ajustes = (() => {
   function enganchar() {
     const c = $('#ajustes-cuerpo');
 
-    $('[data-editar-patron]', c).onclick = editarPatron;
-    $('[data-mover-ciclo]', c).onclick = moverCiclo;
+    const alSiExiste = (sel, fn) => { const b = $(sel, c); if (b) b.onclick = fn; };
+    alSiExiste('[data-editar-patron]', editarPatron);
+    alSiExiste('[data-mover-ciclo]', moverCiclo);
+    alSiExiste('[data-quitar-patron]', quitarPatron);
     $('[data-nuevo-turno]', c).onclick = () => editarTurno(null);
     $('[data-contrato]', c).onclick = editarContrato;
     $('[data-desde]', c).onclick = editarDesde;
@@ -130,6 +145,38 @@ const Ajustes = (() => {
   }
 
   /* ---------- patrón ---------- */
+
+  async function quitarPatron() {
+    if (!await confirmar({
+      titulo: '¿Quitar la rotación?',
+      sub: 'Los días que ya tienes puestos se quedan tal cual. Lo único que cambia es que '
+        + 'los próximos dejan de rellenarse solos: los irás pintando tú.',
+      aceptar: 'Quitarla',
+    })) return;
+
+    /* Antes de soltar la rotación se fijan como días puestos los que ya
+       estaban a la vista. Si no, al quitarla se le vaciaría el calendario
+       a alguien que creía tenerlo hecho. */
+    Estado.cambiar((d) => {
+      const p = d.patron;
+      if (p && p.secuencia && p.secuencia.length) {
+        /* Se arranca en la más antigua de las fechas con sentido: si la
+           rotación nació de días pintados a mano, su ancla es anterior a
+           la fecha de cómputo, y esos días también son suyos. */
+        const candidatas = [d.ajustes.desde, d.creado, p.ancla].filter(Boolean);
+        const desde = candidatas.sort()[0] || Dominio.hoyISO();
+        const hasta = Dominio.sumarDias(Dominio.hoyISO(), 31);
+        for (let f = desde; Dominio.diasEntre(f, hasta) >= 0; f = Dominio.sumarDias(f, 1)) {
+          const id = Dominio.turnoDePatron(f, p);
+          if (!id) continue;
+          d.excepciones[f] = { ...(d.excepciones[f] || {}), tipoId: id };
+        }
+      }
+      d.patron = null;
+      delete d.ajustes.cicloRechazado;
+    });
+    tosti('Rotación quitada. Tus días siguen ahí', 'buena');
+  }
 
   function editarPatron() {
     const actual = Estado.leer().patron;

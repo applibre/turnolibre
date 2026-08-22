@@ -62,7 +62,10 @@ const Estado = (() => {
     desde: datos.ajustes.desde || datos.creado || null,
   });
 
-  const listo = () => !!(datos.patron && datos.tiposTurno.length && datos.bienvenida);
+  /* La rotación es opcional: hay muchísima gente a la que le ponen el
+     cuadrante cada semana y no tiene ninguna. Basta con haber pasado
+     por la bienvenida y tener turnos con los que pintar. */
+  const listo = () => !!(datos.bienvenida && datos.tiposTurno.length);
 
   /** Guarda o retira la excepción de un día. Si el día vuelve a ser
       igual que el patrón, la excepción se borra: no se acumula basura. */
