@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F0F1F3" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0F1216" media="(prefers-color-scheme: dark)">
+<meta name="description" content="Calendario de turnos que además lleva la cuenta de tus horas. Gratis, sin cuenta y sin anuncios.">
+<title>TurnoLibre · tus turnos y tus horas</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icono-192.png">
+<link rel="apple-touch-icon" href="icono-192.png">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ============ BIENVENIDA ============ -->
+<section id="p-bienvenida" class="pantalla" aria-label="Primeros pasos"></section>
+
+<!-- ============ MES ============ -->
+<section id="p-mes" class="pantalla" aria-label="Calendario de turnos">
+  <header class="barra">
+    <button class="mes-nav" id="mes-antes" aria-label="Mes anterior">‹</button>
+    <button class="mes-titulo" id="mes-titulo" aria-label="Ir al mes actual"></button>
+    <button class="mes-nav" id="mes-despues" aria-label="Mes siguiente">›</button>
+  </header>
+
+  <div class="tira" id="tira-saldo"></div>
+
+  <div class="cuerpo">
+    <div class="dow" aria-hidden="true">
+      <span>L</span><span>M</span><span>X</span><span>J</span><span>V</span><span>S</span><span>D</span>
+    </div>
+    <div class="rejilla" id="rejilla"></div>
+    <div class="leyenda" id="leyenda"></div>
+  </div>
+</section>
+
+<!-- ============ HORAS ============ -->
+<section id="p-horas" class="pantalla" aria-label="Recuento de horas">
+  <header class="barra">
+    <button class="mes-nav" id="anio-antes" aria-label="Año anterior">‹</button>
+    <button class="mes-titulo" id="anio-titulo"></button>
+    <button class="mes-nav" id="anio-despues" aria-label="Año siguiente">›</button>
+  </header>
+  <div class="cuerpo" id="horas-cuerpo"></div>
+</section>
+
+<!-- ============ AJUSTES ============ -->
+<section id="p-ajustes" class="pantalla" aria-label="Ajustes">
+  <header class="barra"><span class="mes-titulo estatico">Ajustes</span></header>
+  <div class="cuerpo" id="ajustes-cuerpo"></div>
+</section>
+
+<!-- ============ NAVEGACIÓN ============ -->
+<nav class="nav" id="nav" aria-label="Secciones">
+  <button data-ir="mes" class="viva" aria-current="page">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+    <span>Mes</span>
+  </button>
+  <button data-ir="horas">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
+    <span>Horas</span>
+  </button>
+  <button data-ir="ajustes">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v2.6M12 18.9v2.6M21.5 12h-2.6M5.1 12H2.5M18.7 5.3l-1.8 1.8M7.1 16.9l-1.8 1.8M18.7 18.7l-1.8-1.8M7.1 7.1L5.3 5.3"/></svg>
+    <span>Ajustes</span>
+  </button>
+</nav>
+
+<!-- ============ HOJA INFERIOR ============ -->
+<div class="velo" id="velo"></div>
+<div class="hoja" id="hoja" role="dialog" aria-modal="true" aria-labelledby="hoja-titulo">
+  <div class="asa" aria-hidden="true"></div>
+  <h2 id="hoja-titulo"></h2>
+  <p id="hoja-sub" class="hoja-sub oculto"></p>
+  <div id="hoja-cuerpo"></div>
+</div>
+
+<div class="tosti" id="tosti" role="status" aria-live="polite"></div>
+
+<script src="js/dominio.js"></script>
+<script src="js/almacen.js"></script>
+<script src="js/estado.js"></script>
+<script src="js/interfaz.js"></script>
+<script src="js/exportar.js"></script>
+<script src="js/vistas/mes.js"></script>
+<script src="js/vistas/horas.js"></script>
+<script src="js/vistas/ajustes.js"></script>
+<script src="js/vistas/bienvenida.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

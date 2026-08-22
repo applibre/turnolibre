@@ -1,0 +1,627 @@
+/* ===========================================================
+   TurnoLibre · estilos
+   Identidad propia dentro de applibre: GYM PRO va de oro,
+   GastoLibre de verde salvia; aquí manda el código de colores
+   del cuadrante — ámbar la mañana, azul la tarde, índigo la
+   noche. El resto se aparta para dejarlos hablar.
+   =========================================================== */
+
+:root {
+  --paper:   #F0F1F3;
+  --surface: #FAFBFC;
+  --sunk:    #E4E6EA;
+  --tx:      #171A21;
+  --tx2:     #545A66;
+  --tx3:     #838A96;
+  --line:    #D7DAE0;
+  --line2:   #C0C5CE;
+
+  --acento:  #17708C;
+  --bien:    #1E7A5A;
+  --ojo:     #A34618;
+
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 16px;
+
+  --nav-h: 58px;
+  --sai: env(safe-area-inset-top, 0px);
+  --sae: env(safe-area-inset-bottom, 0px);
+
+  --f: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+  --fm: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="claro"]) {
+    --paper:   #0F1216;
+    --surface: #171B21;
+    --sunk:    #1E232A;
+    --tx:      #E9ECF0;
+    --tx2:     #A3ABB7;
+    --tx3:     #7A828E;
+    --line:    #262C34;
+    --line2:   #343B45;
+    --acento:  #5FB4CE;
+    --bien:    #4FBE94;
+    --ojo:     #E08A55;
+  }
+}
+
+:root[data-tema="oscuro"] {
+  --paper:   #0F1216;
+  --surface: #171B21;
+  --sunk:    #1E232A;
+  --tx:      #E9ECF0;
+  --tx2:     #A3ABB7;
+  --tx3:     #7A828E;
+  --line:    #262C34;
+  --line2:   #343B45;
+  --acento:  #5FB4CE;
+  --bien:    #4FBE94;
+  --ojo:     #E08A55;
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--tx);
+  font-family: var(--f);
+  font-size: 16px;
+  line-height: 1.5;
+  overscroll-behavior-y: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+button { font: inherit; color: inherit; cursor: pointer; }
+.oculto { display: none !important; }
+
+:focus-visible { outline: 2px solid var(--acento); outline-offset: 2px; }
+
+/* ---------- pantallas ----------
+   Ancladas arriba y abajo en vez de con una altura calculada:
+   así no hay hueco muerto ni desbordes cuando el navegador
+   decide a media carga cuánto mide de verdad la ventana. */
+
+.pantalla {
+  position: fixed;
+  inset: 0;
+  bottom: calc(var(--nav-h) + var(--sae));
+  display: none;
+  flex-direction: column;
+  padding-top: var(--sai);
+}
+.pantalla.viva { display: flex; }
+
+.barra {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 10px 10px;
+  flex: 0 0 auto;
+}
+
+.mes-titulo {
+  background: none;
+  border: 0;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  padding: 6px 12px;
+  border-radius: var(--r-md);
+  text-transform: capitalize;
+}
+.mes-titulo.estatico { pointer-events: none; }
+.mes-titulo:active { background: var(--sunk); }
+
+.mes-nav {
+  background: none;
+  border: 0;
+  font-size: 26px;
+  line-height: 1;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  color: var(--tx2);
+  flex: 0 0 auto;
+}
+.mes-nav:active { background: var(--sunk); }
+
+.cuerpo {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 0 12px 24px;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ---------- tira del saldo ----------
+   Siempre visible, no escondida en un menú: es lo que nos
+   diferencia de las demás. */
+
+.tira {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1px;
+  background: var(--line);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 12px;
+}
+.tira > div {
+  background: var(--surface);
+  padding: 9px 10px 10px;
+  text-align: center;
+}
+.tira b {
+  display: block;
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+.tira b.mas { color: var(--ojo); }
+.tira b.menos { color: var(--acento); }
+.tira span {
+  display: block;
+  font-size: 10.5px;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: var(--tx3);
+  margin-top: 2px;
+}
+
+/* ---------- rejilla del mes ---------- */
+
+.dow {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: 5px;
+}
+.dow span {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .06em;
+  color: var(--tx3);
+}
+
+.rejilla {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.dia {
+  aspect-ratio: 1 / 1;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: var(--sunk);
+  color: var(--tx3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  padding: 2px;
+  position: relative;
+  min-height: 40px;
+}
+.dia .n {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.dia .a {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  line-height: 1;
+}
+.dia.relleno { opacity: .3; }
+/* Antes de empezar a usar la app el patrón se pinta, pero rayado:
+   es una proyección, no un registro, y no suma en ningún recuento. */
+.dia.proyectado {
+  background-image: repeating-linear-gradient(-45deg,
+    transparent 0 4px, rgba(128, 136, 148, .28) 4px 6px);
+}
+.dia.proyectado .a { opacity: .55; }
+.dia.hoy { box-shadow: inset 0 0 0 2px var(--tx); }
+.dia:active { transform: scale(.94); }
+
+/* marcas de esquina */
+.dia .marcas {
+  position: absolute;
+  top: 3px;
+  right: 4px;
+  display: flex;
+  gap: 2px;
+  font-size: 8px;
+  font-weight: 700;
+  line-height: 1;
+}
+.dia .extra { color: var(--ojo); }
+.dia .fest::after {
+  content: "";
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.dia .nota-p {
+  position: absolute;
+  bottom: 3px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: .55;
+}
+
+/* ---------- leyenda ---------- */
+
+.leyenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin-top: 16px;
+  padding: 0 2px;
+}
+.leyenda span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--tx2);
+}
+.leyenda i {
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+  display: inline-block;
+}
+
+/* ---------- tarjetas y listas ---------- */
+
+.tarjeta {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 14px 15px;
+  margin-bottom: 12px;
+}
+.tarjeta h3 {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: var(--tx3);
+}
+
+.fila {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--line);
+}
+.fila:last-child { border-bottom: 0; }
+.fila .v { font-variant-numeric: tabular-nums; font-weight: 600; }
+.fila small { display: block; font-size: 12.5px; color: var(--tx3); font-weight: 400; }
+
+.grande {
+  font-size: 38px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.grande.mas { color: var(--ojo); }
+.grande.menos { color: var(--acento); }
+
+.pista { font-size: 13px; color: var(--tx2); margin: 8px 0 0; }
+.pista.chica { font-size: 12px; color: var(--tx3); }
+
+/* barras del año */
+.barras { display: grid; gap: 5px; margin-top: 4px; }
+.barra-mes {
+  display: grid;
+  grid-template-columns: 34px 1fr 58px;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+}
+.barra-mes .m { color: var(--tx3); text-transform: capitalize; }
+.barra-mes .via {
+  height: 8px;
+  background: var(--sunk);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+.barra-mes .via i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--acento);
+  border-radius: 4px;
+}
+.barra-mes .via i.mas { background: var(--ojo); }
+.barra-mes .h { text-align: right; font-variant-numeric: tabular-nums; color: var(--tx2); }
+
+/* ---------- botones ---------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 13px 16px;
+  border: 1px solid var(--line2);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  font-size: 15px;
+  font-weight: 600;
+}
+.btn.principal { background: var(--tx); color: var(--paper); border-color: var(--tx); }
+.btn.peligro { color: var(--ojo); border-color: var(--ojo); }
+.btn:active { transform: scale(.985); }
+.btn + .btn { margin-top: 8px; }
+
+.botones { display: flex; gap: 8px; margin-top: 6px; }
+.botones .btn { margin-top: 0; }
+
+/* ---------- campos ---------- */
+
+.campo { margin-bottom: 14px; }
+.campo label {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--tx2);
+  margin-bottom: 5px;
+}
+.campo input, .campo select, .campo textarea {
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid var(--line2);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--tx);
+  font: inherit;
+  font-size: 16px; /* menos de 16 y iOS hace zoom al enfocar */
+}
+.campo textarea { resize: vertical; min-height: 64px; }
+
+.grupo { display: flex; gap: 8px; }
+.grupo .campo { flex: 1; margin-bottom: 0; }
+
+/* selector segmentado */
+.segmentos {
+  display: flex;
+  gap: 3px;
+  background: var(--sunk);
+  border-radius: var(--r-md);
+  padding: 3px;
+}
+.segmentos button {
+  flex: 1;
+  border: 0;
+  background: none;
+  padding: 9px 6px;
+  border-radius: 7px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--tx2);
+}
+.segmentos button.viva { background: var(--surface); color: var(--tx); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+
+/* elegir turno en la hoja */
+.turnos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  gap: 8px;
+}
+.turnos button {
+  border: 2px solid transparent;
+  border-radius: var(--r-md);
+  padding: 11px 6px 10px;
+  background: var(--sunk);
+  display: grid;
+  gap: 2px;
+  justify-items: center;
+}
+.turnos button .t { font-size: 13.5px; font-weight: 700; }
+.turnos button .h { font-size: 11px; opacity: .8; font-variant-numeric: tabular-nums; }
+.turnos button.viva { border-color: currentColor; }
+
+/* patrones de fábrica */
+.patrones { display: grid; gap: 8px; }
+.patron {
+  border: 1px solid var(--line2);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  padding: 12px 14px;
+  text-align: left;
+  display: grid;
+  gap: 6px;
+}
+.patron.viva { border-color: var(--acento); box-shadow: inset 0 0 0 1px var(--acento); }
+.patron b { font-size: 15px; }
+.patron small { font-size: 12.5px; color: var(--tx3); }
+.patron .tira-p { display: flex; gap: 3px; flex-wrap: wrap; }
+.patron .tira-p i {
+  width: 15px;
+  height: 15px;
+  border-radius: 3px;
+  display: block;
+}
+
+/* ---------- navegación inferior ---------- */
+
+.nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: calc(var(--nav-h) + var(--sae));
+  padding-bottom: var(--sae);
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  /* fondo sólido: el desenfoque parpadea al hacer scroll en Android */
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+  z-index: 30;
+}
+.nav button {
+  border: 0;
+  background: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  color: var(--tx3);
+  font-size: 10.5px;
+  font-weight: 600;
+}
+.nav button svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.nav button.viva { color: var(--tx); }
+
+/* ---------- hoja inferior ---------- */
+
+.velo {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 12, 16, .42);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s ease;
+  z-index: 40;
+}
+.velo.viva { opacity: 1; pointer-events: auto; }
+
+.hoja {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-height: 86vh;
+  overflow-y: auto;
+  background: var(--paper);
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+  padding: 8px 16px calc(20px + var(--sae));
+  transform: translateY(102%);
+  transition: transform .24s cubic-bezier(.22,.8,.3,1);
+  z-index: 50;
+}
+.hoja.viva { transform: translateY(0); }
+.hoja .asa {
+  width: 38px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--line2);
+  margin: 4px auto 12px;
+}
+.hoja h2 { margin: 0 0 4px; font-size: 18px; font-weight: 700; text-transform: capitalize; }
+.hoja-sub { margin: 0 0 14px; font-size: 13.5px; color: var(--tx3); }
+.hoja h2 + div, .hoja-sub + div { margin-top: 12px; }
+
+/* ---------- avisos ---------- */
+
+.tosti {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--nav-h) + var(--sae) + 14px);
+  transform: translate(-50%, 14px);
+  max-width: min(92vw, 420px);
+  background: var(--tx);
+  color: var(--paper);
+  padding: 11px 15px;
+  border-radius: var(--r-md);
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .18s ease, transform .18s ease;
+  z-index: 60;
+}
+.tosti.viva { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+.tosti.buena { background: var(--bien); color: #fff; }
+.tosti.mala { background: var(--ojo); color: #fff; }
+.tosti button {
+  border: 0;
+  background: rgba(255,255,255,.2);
+  color: inherit;
+  padding: 5px 11px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  flex: 0 0 auto;
+}
+
+/* ---------- avisos en línea ---------- */
+
+.aviso {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  background: var(--sunk);
+  border-radius: var(--r-md);
+  padding: 11px 13px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--tx2);
+}
+.aviso b { color: var(--tx); }
+
+/* ---------- bienvenida ---------- */
+
+.bien-caja {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 8px 20px 24px;
+  display: flex;
+  flex-direction: column;
+}
+.bien-caja h1 {
+  font-size: 27px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 12px 0 8px;
+  line-height: 1.12;
+}
+.bien-caja .lema { font-size: 15px; color: var(--tx2); margin: 0 0 22px; }
+.bien-paso { display: none; }
+.bien-paso.viva { display: block; }
+.bien-pie { margin-top: auto; padding-top: 18px; }
+.puntos { display: flex; gap: 5px; justify-content: center; margin-bottom: 12px; }
+.puntos i { width: 6px; height: 6px; border-radius: 50%; background: var(--line2); }
+.puntos i.viva { background: var(--tx); }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+  .dia:active, .btn:active { transform: none; }
+}
